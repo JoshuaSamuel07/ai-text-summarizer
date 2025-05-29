@@ -1,0 +1,66 @@
+from transformers import pipeline
+import gradio as gr
+import textwrap
+
+# Load summarization model
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+
+MAX_INPUT_LENGTH = 1024  # Token limit approx (model dependent)
+
+def chunk_text(text, max_chars=1000):
+    # Split text into chunks of max_chars without breaking sentences awkwardly
+    sentences = text.split('. ')
+    chunks = []
+    current_chunk = ""
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) + 1 <= max_chars:
+            current_chunk += sentence + ". "
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = sentence + ". "
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks
+
+def summarize_text(text):
+    if len(text.strip()) == 0:
+        return "Please enter some text to summarize."
+
+    chunks = chunk_text(text, max_chars=1000)
+    summaries = []
+    for chunk in chunks:
+        summary = summarizer(chunk, max_length=130, min_length=30, do_sample=False)
+        summaries.append(summary[0]['summary_text'])
+    
+    combined_summary = " ".join(summaries)
+    # Optionally, shorten combined summary a bit more if it's long
+    if len(combined_summary.split()) > 150:
+        combined_summary = summarizer(combined_summary, max_length=150, min_length=50, do_sample=False)[0]['summary_text']
+    
+    return combined_summary
+
+css = """
+#input-textbox textarea {
+    font-size: 16px;
+    line-height: 1.5;
+}
+#output-textbox textarea {
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #f9f9f9;
+}
+"""
+
+iface = gr.Interface(
+    fn=summarize_text,
+    inputs=gr.Textbox(lines=20, placeholder="Paste your text here...", label="Enter text to summarize", elem_id="input-textbox"),
+    outputs=gr.Textbox(label="Summary", elem_id="output-textbox"),
+    title="🧠 Bart AI Text Summarizer",
+    description="Paste your long text here and click Submit to get a concise summary.",
+    allow_flagging="never",
+    theme="compact",
+    css=css,
+    live=False,
+)
+
+iface.launch()

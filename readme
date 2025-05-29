@@ -1,0 +1,12 @@
+ https://joshuasamuel07-ai-text-summarizer.hf.space/
+metadata
+title: Ai Text Summarizer
+emoji: 🏆
+colorFrom: pink
+colorTo: purple
+sdk: gradio
+sdk_version: 5.31.0
+app_file: app.py
+pinned: false
+license: mit
+short_description: ai-text-summarizer for FB text sum
